@@ -31,7 +31,7 @@ for i in range(marime):
     axs[1, i].set_title(f"Linia {i} - Imaginar")
     axs[1, i].set_ylim(-1.2, 1.2)
 
-plt.show()
+#plt.show()
 
 FH = np.conj(F.T)
 prod = FH @ F
@@ -103,13 +103,16 @@ def animate1(i):
     if end_index > esantioane:
         end_index = esantioane
 
+    x_current = x[end_index - 1]
+    y_current = y[end_index - 1]
+
     line_time.set_data(np.arange(end_index), x[:end_index])
-    point_time.set_data(end_index, x[end_index - 1])
-    line_amp.set_data([end_index, end_index], [0, x[end_index - 1]])
+    point_time.set_data([end_index], [x_current])
+    line_amp.set_data([end_index, end_index], [0, x_current])
 
     line_complex.set_data(y[:end_index].real, y[:end_index].imag)
-    point_complex.set_data(y[end_index - 1].real, y[end_index - 1].imag)
-    line_radius.set_data([0, y[end_index - 1].real], [0, y[end_index - 1].imag])
+    point_complex.set_data([y_current.real], [y_current.imag])
+    line_radius.set_data([0, y_current.real], [0, y_current.imag])
 
     return line_time, point_time, line_amp, line_complex, point_complex, line_radius
 
@@ -168,13 +171,14 @@ def animate2(i):
     if end_index > esantioane:
         end_index = esantioane
 
-    for j in range(4):
-        desene[j].set_data(Y[j][:end_index].real, Y[j][:end_index].imag)
-        linii_dft[j].set_data([0, Y[j][end_index].real], [0, Y[j][end_index].imag])
+    if end_index == 0:
+        return elemente
 
-        if end_index > 0:
-            markeri[j].set_data(Y[j][end_index - 1].real, Y[j][end_index - 1].imag)
-            linii_dft[j].set_data([0, Y[j][end_index - 1].real], [0, Y[j][end_index - 1].imag])
+    for j in range(4):
+        current_y_point = Y[j][end_index - 1]
+        desene[j].set_data(Y[j][:end_index].real, Y[j][:end_index].imag)
+        markeri[j].set_data([current_y_point.real], [current_y_point.imag])
+        linii_dft[j].set_data([0, current_y_point.real], [0, current_y_point.imag])
 
     return elemente
 
@@ -230,8 +234,8 @@ axes[1].set_ylim(0, 1200)
 axes[1].grid(True)
 axes[1].ticklabel_format(style='plain', axis='y')
 
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.show()
+plt.tight_layout()
+#plt.show()
 
 print(f"\nFrecventele introduse: {f1} Hz, {f2} Hz, {f3} Hz")
 
