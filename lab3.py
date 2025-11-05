@@ -1,11 +1,52 @@
-# 2.
-
-# a.
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_pdf import PdfPages
+import math
 
+#1.
+marime = int(input("Marime = "))
+
+def calcElemFourier(linie, coloana, marime, semn):
+    grad = semn * 2 * math.pi * linie * coloana / marime
+    return complex(math.cos(grad), math.sin(grad)) / math.sqrt(marime)
+
+def matriceaFourier(marime):
+    Fourier = np.zeros((marime, marime), dtype=np.complex128)
+    for i in range(marime):
+        for j in range(marime):
+            Fourier[i, j] = calcElemFourier(i, j, marime, -1)
+    return Fourier
+
+F = matriceaFourier(marime)
+
+fig, axs = plt.subplots(2, marime, figsize=(20, 5))
+
+for i in range(marime):
+    axs[0, i].plot(F[i].real, color='blue')
+    axs[0, i].set_title(f"Linia {i} - Real")
+    axs[0, i].set_ylim(-1.2, 1.2)
+
+    axs[1, i].plot(F[i].imag, color='red')
+    axs[1, i].set_title(f"Linia {i} - Imaginar")
+    axs[1, i].set_ylim(-1.2, 1.2)
+
+plt.show()
+
+FH = np.conj(F.T)
+prod = FH @ F
+
+identitate = np.eye(marime, dtype=np.complex64)
+este_unitara = np.allclose(prod, identitate)
+diferenta = np.linalg.norm(prod - identitate)
+
+print(este_unitara)
+print(diferenta)
+
+
+# 2.
+
+# a.
 frecventa = 5
 frecventaEsantionare = 1000
 durata = 1
@@ -199,3 +240,4 @@ print(f"Frecventele identificate (top 3): {frecventaDesen[peak_indices]} Hz")
 
 with PdfPages("PDF2.pdf") as pdf:
     pdf.savefig(fig3)
+
