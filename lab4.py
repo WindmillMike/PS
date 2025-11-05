@@ -4,6 +4,72 @@ import librosa.display
 from moviepy.editor import AudioFileClip
 from scipy.io import wavfile
 import os
+import time
+import timeit
+
+#1.
+def dft(x):
+    lungime = len(x)
+    X = np.zeros(lungime, dtype=complex)
+    for k in range(lungime):
+        for n in range(lungime):
+            X[k] += x[n] * np.exp(-2j * np.pi * k * n / lungime)
+    return X
+
+
+def fft_recursive(x):
+    lungime = len(x)
+    if lungime <= 1:
+        return x
+
+    XPar = fft_recursive(x[::2])
+    XImpar = fft_recursive(x[1::2])
+    factor = np.exp(-2j * np.pi * np.arange(lungime) / lungime)
+
+    N_half = lungime // 2
+    return np.concatenate([XPar + factor[:N_half] * XImpar,
+                           XPar + factor[N_half:] * XImpar])
+
+
+Ns = [128, 256, 512, 1024, 2048, 4096, 8192]
+
+timpDft = []
+timpFFT = []
+timeFFTnumpy = []
+
+for i in Ns:
+    x = np.random.rand(i)
+
+    start = time.time()
+    dft(x)
+    end = time.time()
+    t_dft = end - start
+    timpDft.append(t_dft)
+
+    start = time.time()
+    fft_recursive(x)
+    end = time.time()
+    t_fft_proprie = end - start
+    timpFFT.append(t_fft_proprie)
+
+    t_fft_numpy = timeit.timeit(lambda: np.fft.fft(x), number=1) / 1
+    timeFFTnumpy.append(t_fft_numpy)
+
+    print(f"{i:<5} | {t_dft:>15.6f} | {t_fft_proprie:>18.6f} | {t_fft_numpy:>15.6f}")
+
+
+plt.figure(figsize=(10, 6))
+plt.plot(Ns, timpDft, marker='o')
+plt.plot(Ns, timpFFT, marker='o')
+plt.plot(Ns, timeFFTnumpy, marker='o')
+
+plt.xscale('log', base=2)
+plt.yscale('log', base=10)
+
+plt.xticks(Ns, [str(n) for n in Ns])
+plt.grid(True, which="both", ls="--", alpha=0.7)
+plt.tight_layout()
+plt.show()
 
 #2.
 frecventaNYQ = 300
@@ -184,3 +250,4 @@ plt.xlabel('Timp (s)')
 plt.ylabel('Frecvența (Hz)')
 plt.title('Spectrograma Vocalelor (STFT Manual)')
 plt.show()
+
