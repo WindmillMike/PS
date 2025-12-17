@@ -71,8 +71,6 @@ plt.figure(figsize=(14, 6))
 plt.plot(t[:500], serieTimp[:500], color='C0')
 plt.plot(t[:500], predictii[:500], color='red', linestyle='--', linewidth=2)
 plt.axvline(x=p, color='gray', linestyle=':')
-
-plt.legend()
 plt.grid(True)
-#plt.show()
+plt.show()
 
