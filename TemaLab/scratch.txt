@@ -1,167 +1,71 @@
+#2.
+
+#a.
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.datasets import ascent # nu imi gasea modulul misc
-from scipy.fft import dctn, idctn
-from tabele_huffman import HUFFMAN_DC_LUMINANCE, HUFFMAN_AC_LUMINANCE
 
-X = ascent()
+frecventa = 5
+frecventaEsantionare = 1000
+durata = 1
+t = np.arange(0, durata, 1 / frecventaEsantionare)
+x = np.sin(2 * np.pi * frecventa * t + 0.5 * np.pi)
 
-Q_jpeg = np.array([
-    [16, 11, 10, 16, 24, 40, 51, 61],
-    [12, 12, 14, 19, 26, 28, 60, 55],
-    [14, 13, 16, 24, 40, 57, 69, 56],
-    [14, 17, 22, 29, 51, 87, 80, 62],
-    [18, 22, 37, 56, 68, 109,103, 77],
-    [24, 35, 55, 64, 81, 104,113, 92],
-    [49, 64, 78, 87, 103,121,120,101],
-    [72, 92, 95, 98, 112,100,103, 99]
-], dtype=float)
+omega = 1
+y = x * np.exp(-2j * np.pi * omega * t)
 
+fig, axes = plt.subplots(1, 2, figsize=(15, 6))
 
-def adaugarePadding(X2):
-    inaltime, latime = X2.shape
-    n, m = (-latime) % 8, (-inaltime) % 8
-    ceva = np.zeros((inaltime + m, latime + n), dtype=X2.dtype)
-    ceva[:inaltime, :latime] = X2
-    return ceva
+axes[0].plot(t * frecventaEsantionare, x, color='green')
+axes[0].set_title("Semnalul x[n] in Domeniul Timp")
+axes[0].set_xlabel("Timp (esantioane)")
+axes[0].set_ylabel("Amplitudine")
+axes[0].axhline(0, color='black', linewidth=0.5)
+axes[0].set_xlim([0, 1000])
 
-def spirala(bloc):
-    l = 0
-    vector = np.zeros(64)
-    for i in range(14):
-        if i < 8:
-            for j in range(i + 1):
-                if i % 2 == 0:
-                    vector[l] = bloc[i - j][j]
-                elif i % 2:
-                    vector[l] = bloc[j][i - j]
-                l += 1
-        else:
-            for j in range(8 - (i % 7)):
-                if i % 2 == 0:
-                    vector[l] = bloc[7 - j][j + i % 7]
-                elif i % 2:
-                    vector[l] = bloc[j + i % 7][7 - j]
-                l += 1
-    vector[l] = bloc[7][7]
-    return np.array(vector)
+index_marker = 620
+axes[0].plot(index_marker, x[index_marker], 'ro', markersize=8)
+axes[0].plot([index_marker, index_marker], [0, x[index_marker]], 'r-', linewidth=1)
 
-def binar_size(x):
-    if x == 0:
-        return 0
-    size = int(np.floor(np.log2(np.abs(x)))) + 1
-    if size > 10:
-        return 10
-    return size
+axes[1].plot(y.real, y.imag, color='slateblue', linewidth=1.5)
+axes[1].set_xlabel("Real")
+axes[1].set_ylabel("Imaginar")
 
-def binar_ac(x, size):
-    if x == 0:
-        return ""
-    x = int(x)
-    if x > 0:
-        return format(x, f"0{size}b")
-    else:
-        x2 = (1 << size) - 1 + x
-        return format(x2, f"0{size}b")
-
-def huffman_codare(ac, huffman):
-    contor = 0
-    for i in range(63):
-        v = ac[i]
-        if v == 0:
-            contor += 1
-            if contor == 16:
-                huffman[-1].append(("AC" + str(i), 0xF0))
-                contor = 0
-        else:
-            ac_binar = binar_size(v)
-            ac_codat = (contor << 4) | ac_binar
-            huffman[-1].append(("AC" + str(i), ac_codat, v))  # ac_codat ne spune ca nr de zero e partea intreaga din ac_codat // 16 si restul rep numarul de biti necesari pentru a rep nr v de ex. 33 ne spune 33 // 16 e 2 (2 zero-uri) si deci 1 bit ramas ca sa se rep nr v
-            contor = 0
-
-    if contor > 0:
-        huffman[-1].append(("AC" + str(i), 0x00))
+axes[1].axhline(0, color='black', linewidth=0.5)
+axes[1].axvline(0, color='black', linewidth=0.5)
+axes[1].set_aspect('equal', adjustable='box')
+axes[1].set_xlim([-1.1, 1.1])
+axes[1].set_ylim([-1.1, 1.1])
 
 
-def transformare_octeti(x):
-    padding_len = (8 - (len(x) % 8)) % 8
-    x += "0" * padding_len
+axes[1].plot(y[index_marker].real, y[index_marker].imag, 'ro', markersize=8)
+axes[1].plot([0, y[index_marker].real], [0, y[index_marker].imag], 'r-', linewidth=1)
 
-    v = []
-    for i in range(0, len(x), 8):
-        octet = x[i:i + 8]
-        valoare = int(octet, 2)
-        v.append(hex(valoare))
-
-        if valoare == 0xFF:
-            v.append('0x00')
-
-    return v
+plt.tight_layout()
+plt.show()
 
 
 
-inaltime, latime = X.shape
-X2 = X.copy().astype(float)
-X2 = adaugarePadding(X2)
-inaltime2, latime2 = X2.shape
-reconstruit = np.zeros_like(X2, dtype=float)
+#b.
+fig, axes = plt.subplots(1, 4, figsize=(15, 6))
 
-dc_anterior = 0.0
-huffman = []
+def showFig(y, i):
+    axes[i].plot(y.real, y.imag, color='pink', linewidth=1.5)
+    axes[i].set_xlabel("Real")
+    axes[i].set_ylabel("Imaginar")
 
+    axes[i].axhline(0, color='black', linewidth=0.5)
+    axes[i].axvline(0, color='black', linewidth=0.5)
+    axes[i].set_aspect('equal', adjustable='box')
+    axes[i].set_xlim([-1.1, 1.1])
+    axes[i].set_ylim([-1.1, 1.1])
+    dft_result = np.mean(y)
+    axes[i].plot([0, dft_result.real], [0, dft_result.imag], 'k-', linewidth=4)
+    axes[i].plot(dft_result.real, dft_result.imag, 'ko', markersize=10)
 
-for i in range(inaltime2 // 8):
-    for j in range(latime2 // 8):
-        x = X2[i * 8:(i + 1) * 8, j * 8:(j + 1) * 8]
-        y = dctn(x).astype(float)
-        y_impartit = np.round(y / Q_jpeg)
+omega = [1, 2, 5, 7]
+for i in range(4):
+    y = x * np.exp(-2j * np.pi * omega[i] * t)
+    showFig(y, i)
 
-        spirala1 = spirala(y_impartit) # aici facem zig-zagul pentru ca 0-urile sa fie grupate frumos
-
-        dc_actual = spirala1[0] - dc_anterior  # se realizeaza pentru o codare huffman mai buna si pentru ca diferenta de luminozitate intre blocuri e mica
-        size = binar_size(dc_actual)
-        dc_anterior = spirala1[0]
-        ac = spirala1[1:]
-        huffman.append([])
-        huffman[-1].append(("DC", size, dc_actual))
-        huffman_codare(ac, huffman)
-
-        y_inmultit = Q_jpeg * y_impartit
-        x_jpeg = idctn(y_inmultit)
-        reconstruit[i * 8:(i + 1) * 8, j * 8:(j + 1) * 8] = x_jpeg
-
-bitstream = ""
-for bloc in huffman:
-    for pixel in bloc:
-        if pixel[0] == "DC":
-            size = pixel[1]
-            dc_actual = pixel[2]
-            size_codat = HUFFMAN_DC_LUMINANCE.get(size)
-            dc_binar = binar_ac(dc_actual, size)
-            bitstream += size_codat + dc_binar
-
-        elif len(pixel) == 2:
-            bitstream += HUFFMAN_AC_LUMINANCE.get(pixel[1])
-        elif len(pixel) == 3:
-            size_cu_zero = pixel[1]
-            valoare = pixel[2]
-            size = size_cu_zero & 0x0F
-            size_cu_zero_codat = HUFFMAN_AC_LUMINANCE.get(size_cu_zero)
-            valoare_binar = binar_ac(valoare, size)
-            bitstream += size_cu_zero_codat + valoare_binar
-
-
-payload_jpeg = transformare_octeti(bitstream)
-print(payload_jpeg)
-
-
-
-
-x5 = binar_ac(33, 6)
-print(x5)
-print(transformare_octeti(x5))
-reconstruit2 = reconstruit[:inaltime, :latime]
-reconstruit3 = np.clip(reconstruit, 0, 255).astype(np.uint8)
-
-
-
+plt.tight_layout()
+plt.show()
