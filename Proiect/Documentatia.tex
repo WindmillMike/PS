@@ -1,0 +1,232 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[romanian]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumerate}
+\usepackage{geometry}
+\usepackage{url}
+
+\geometry{margin=2.5cm}
+
+\begin{document}
+
+\title{Sistem de Control prin Gesturi}
+\author{Realizat de: Botea Maryo-Alexandru \\ Limbaj: Python (OpenCV)}
+\date{}
+\maketitle
+
+\tableofcontents
+\newpage
+
+\chapter{Introducere}
+
+\section{Contextul actual}
+În era digitală actuală, utilizarea calculatorului a devenit o necesitate, acoperind spectrul de la activități profesionale de birou până la sesiuni de gaming și streaming. Deși interacțiunea clasică prin tastatură și mouse rămâne standardul pentru precizie, aceasta nu este optimizată în totalitate pentru sarcinile de fundal.
+
+Atât în mediul \textbf{Corporate/Office}, cât și în cel de \textbf{Gaming}, utilizatorii se confruntă cu aceeași problemă fundamentală: întreruperea activității principale pentru a gestiona sarcini secundare:
+
+\begin{enumerate}[I.]
+    \item \textbf{Pentru profesionistul de birou:} Ajustarea muzicii de fundal sau preluarea rapidă a unui apel necesită minimizarea ferestrelor de lucru sau căutarea cursorului pe ecrane multiple, ceea ce perturbă concentrarea și scade productivitatea. 
+    \item \textbf{Pentru gamer:} În timpul jocurilor competitive (care rulează în „Full Screen”), minimizarea ferestrei pentru a ajusta volumul sau a pune Discord-ul pe „Mute” poate deveni frustrantă pentru sesiunea de joc, sau poate cauza blocarea aplicației. 
+\end{enumerate}
+
+Proiectul de față propune o soluție care extinde zona de control dincolo de suprafața fizică a biroului. Camera web este transformată într-un senzor de gesturi, sistemul oferind astfel o alternativă „touchless” care nu își propune să înlocuiască tastatura în sarcinile uzuale, ci să o completeze în momentele de distanțare fizică. Astfel, controlul calculatorului devine accesibil prin simpla ridicare a mâini oferind utilizatorului libertatea spațială. 
+
+\section{Obiectivele proiectului}
+Acest proiect își propune dezvoltarea unei aplicații software capabile să recunoască gesturile mâinii în timp real folosind o cameră web obișnuită și să le traducă în comenzi specifice pentru sistemul de operare (ajustarea volumului, control media, etc.). Obiectivele specifice sunt: 
+\begin{itemize}
+    \item Detectarea și segmentarea mâinii din fundal în timp real.
+    \item Calibrarea dinamică a culorii pielii pentru a funcționa în diverse condiții de iluminare. 
+    \item Numărarea degetelor ridicate folosind algoritmi geometrici (Convex Hull).
+    \item Maparea numărului de degete la acțiuni sistem: Volum Sus/Jos, Play/Pause, Mute.
+\end{itemize}
+
+\section{Corelația proiectului cu prelucrarea semnalelor}
+Din punct de vedere ingineresc, proiectul prelucrează semnale multidimensionale. O Imaginea video nu este doar o „poză”, ci un semnal discret asupra căruia aplicăm operații matematice: 
+\begin{itemize}
+    \item \textbf{Natura Semnalului:} O imagine digitală este un semnal 2D. Pixelii sunt eșantioanele acestui semnal. Proiectul manipulează aceste matrici în timp real.
+    \item \textbf{Filtrarea Spațială:} Utilizarea \textbf{Gaussian Blur} reprezintă aplicarea unui \textbf{Filtru Trece-Jos} pentru eliminarea zgomotului de înaltă frecvență.
+    \item \textbf{Schimbarea Domeniului:} Transformarea din BGR în \textbf{HSV} este similară cu transformările din domeniul timp în frecvență. Schimbăm modul de reprezentare a semnalului pentru a izola informația care ne interesează (Culoarea/Hue) de cea mai puțin importantă. 
+    \item \textbf{Segmentarea:} Prin aplicarea pragurilor pe valorile HSV, transformăm un semnal complex color într-un semnal binar (Alb și Negru). Practic, decupăm semnalul util (mâna) de zgomotul de fundal.
+    \item \textbf{Extragerea de trăsături:} Trecerea de la o matrice de pixeli la coordonatele vârfurilor degetelor înseamnă reducerea datelor. De la o poza de milioane de pixeli algoritmul extrage doar câțiva vectori relevanți care dictează rezultatul. 
+\end{itemize}
+
+\chapter{Concepte Teoretice și Tehnologii Utilizate}
+
+\section{Limbajul Python și Biblioteci}
+Proiectul este realizat în Python, ales pentru versatilitatea sa și suportul vast pentru biblioteci de procesare de imagine. 
+\begin{itemize}
+    \item \textbf{OpenCV (Open Source Computer Vision Library):} Este biblioteca principală utilizată pentru prelucrarea imaginilor (citirea cadrelor de la camera video, filtrare, detectarea contururilor).
+    \item \textbf{NumPy:} Utilizată pentru operații matematice pe matrice 
+    \item \textbf{PyAutoGUI:} O bibliotecă ce permite scriptului să controleze tastatura și mouse-ul, simulând apăsarea tastelor fizice.
+\end{itemize}
+
+\section{Spațiul de culoare HSV vs. BGR  vs. YCrCb}
+Prima dificultate întâlnită în acest proiect a fost detectarea pielii. Resursa de început de la care am plecat a fost această \cite{skin} ce oferea o mască formată din toate 3 domeniile. După multe încercări de a testa parametrii pentru a ințelege care detectează pielea cu o acuratețe cât mai mare am ajuns la concluzia că formatul HSV este detașat câștigătorul. Orice altă combinație de spații oferă un rezultat semnificativ mai prost. 
+\\[2ex]
+Formatul HSV este un acronim provenit de la cuvintele: 
+
+\begin{itemize}
+    \item \textbf{Hue (Nuanța):} Reprezintă tipul culorii și are cel mai important rol în detectarea pielii. 
+    \item \textbf{Saturation (Saturația):} Ajută la filtrarea elementelor prea albe/gri sau fosforescente (pielea fiind undeva la mijloc). 
+    \item \textbf{Value (Luminozitatea):} Cât de luminoasă este culoarea. Prin utilizarea ei putem izola nuanța pielii indiferent de umbrele sau luminile puternice din cameră. 
+\end{itemize}
+
+
+\section{Algoritmi de Procesare}
+Algoritmii importați folosiți în programul meu sunt 
+\begin{itemize}
+    \item \textbf{Gaussian Blur (Filtrare Gaussiană):} Un filtru de netezire aplicat inițial (cv2.GaussianBlur) pentru a reduce zgomotul de înaltă frecvență generat de senzorul camerei web. Acesta uniformizează pixelii vecini, prevenind detectarea unor contururi false. 
+    \item \textbf{HSV Color Thresholding (Segmentare prin Praguri de Culoare):} Procesul principal de extragere a mâinii (cv2.inRange). Algoritmul verifică fiecare pixel al imaginii și generează o mască binară: pixelii care se încadrează în intervalul calibrat de nuanță a pielii devin albi (255), iar restul negri (0). 
+    \item \textbf{Morphological Dilation (Dilatare Morfologică):} O tehnică de post-procesare a măștii binare (cv2.dilate). Aceasta extinde zonele albe pentru a „umple” micile găuri sau imperfecțiuni apărute în interiorul palmei din cauza iluminării inegale, asigurând un contur continuu și solid. 
+    \item \textbf{Distance Transform:} Un algoritm esențial (cv2.distanceTransform) utilizat pentru a găsi centrul geometric al palmei. Acesta calculează distanța euclidiană de la fiecare pixel alb din mască până la cel mai apropiat pixel negru de fundal. Pixelul cu valoarea maximă reprezintă centrul celui mai mare cerc care poate fi înscris în mască el reprezentând pumnul închis.Oferă un punct de referință stabil indiferent de rotația mâinii. 
+    \item \textbf{Convex Hull (Înveliș Convex):} Algoritm geometric care determină cel mai mic poligon convex ce poate înconjura setul de puncte al conturului mâinii. Acesta este folosit ca referință pentru a detecta abaterile formei mâinii. 
+    \item \textbf{Convexity Defects și Legea Cosinusurilor:} Identificarea degetelor se realizează prin analiza „defectelor de convexitate” (spațiile concave dintre degete și învelișul convex). Pentru a valida dacă un defect reprezintă spațiul dintre două degete, se aplică Teorema Cosinusului pentru a calcula unghiul format între vârful defectului și punctele adiacente. Doar unghiurile ascuțite (< 90°) sunt considerate valide.
+    \item \textbf{Stabilizare Temporală (Mode Filtering):} Deoarece detecția poate fluctua de la o milisecundă la alta, am implementat un algoritm de stabilizare bazat pe o coadă de așteptare de 15 cadre. Sistemul nu reacționează instantaneu, ci calculează o medie. 
+\end{itemize}
+
+
+\section{Fundamentele Matematice}
+\textbf{Distanța Euclidiană:}
+Este cea mai folosită formulă din proiect. O folosim în două locuri critice: 
+\begin{itemize}
+\item Pentru a filtra punctele prea apropiate (deduplicare) 
+\item Pentru a calcula cât de departe este un punct de pe contur față de centrul palmei 
+\end{itemize}
+Formula distanței dintre două puncte (x1, y1) și (x2, y2) este: 
+\[ D = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2} \]
+
+\textbf{Teorema Cosinusului:}
+Aceasta este partea care distinge un spațiu dintre degete de o simplă curbură a mâinii. Formăm un triunghi imaginar între trei puncte: vârful degetului din stânga, vârful degetului din dreapta și punctul cel mai adânc dintre ele (defectul). 
+\\[2ex]
+Cunoscând lungimile laturilor a, b și c (calculate cu formula de mai sus), aflăm unghiul $\gamma$ folosind formula: 
+\[ \cos(\gamma) = \frac{a^2 + b^2 - c^2}{2ab} \]
+Dacă $\gamma \leq 90^\circ$, punctul este validat ca spațiu între degete.
+
+\chapter{Arhitectura Sistemului și Implementare}
+
+\section{Inițializarea Imaginii și Definirea Zonei de Interes (ROI)}
+Pentru a optimiza viteza de procesare și a elimina erorile cauzate de obiectele din fundal (mobilă, haine), nu procesăm întregul cadru video. 
+\begin{itemize}
+\item \textbf{Redimensionarea:} Imaginea este redimensionată la 600 $\times$ 600 pixeli. Aceasta este o dimensiune de mai mică și mai puțin costisitoare ca resurse.Este suficient de mare pentru a vedea detaliile degetelor, dar suficient de mică pentru a rula rapid pe orice laptop. 
+\item \textbf{Decuparea ROI:} Definim un pătrat fix de 250 $\times$ 250 pixeli (roi\_x, roi\_y). Utilizatorul este obligat să țină mâna în acest pătrat. Tot ce se întâmplă în afara acestui pătrat este ignorat de algoritmii de detecție.
+\end{itemize}
+
+
+\section{Calibrarea Dinamică}
+Sistemul nu folosește valori fixe pentru culoarea pielii, deoarece lumina diferă de la o cameră la altta.
+
+\begin{itemize}
+\item \textbf{Zona de mostră:} În interiorul ROI există un pătrat verde mai mic. Când utilizatorul pune palma acolo și apasă tasta „c”, programul „învață” culoarea pielii. 
+\item \textbf{Calculul Mediei:} Se extrage o mică matrice de pixeli din centrul palmei și se calculează media pe canalele H, S și V. 
+\item \textbf{Stabilirea limitelor:} Se adaugă și se scad marje de eroare față de medie pentru a crea intervalul de detecție (piele\_inferioara și piele\_superioara).
+\end{itemize}
+
+\vspace{4ex}
+\section{Segmentarea și Curățarea Imaginii}
+Odată calibrat, sistemul intră în modul de detecție activă. 
+\begin{itemize}
+    \item \textbf{Masca Binară:} Folosind funcția cv2.inRange, transformăm imaginea color într-una alb-negru care va fi masca. Tot ce se potrivește cu calibrarea devine Alb, restul Negru. 
+    \item \textbf{Dilatarea:} Deoarece iluminarea nu este perfectă, masca poate avea mici găuri negre. Aplicăm cv2.dilate de două ori pentru a acoperi zonele albe și a obține o formă solidă a mâinii. 
+    \item \textbf{Selectarea Conturului:} Camera poate detecta și alte obiecte mici de culoarea pielii. Algoritmul cv2.findContours găsește toate formele, dar noi o păstrăm doar pe cea cu aria maximă (max(contururi, key = cv2.contourArea)), presupunând că mâina este cel mai mare obiect din pătrat. 
+    \item \textbf{Verificarea Ariei Minime:} Chiar dacă obiectul din Regiunea de Interes are culoarea pielii, sistemul verifică dacă acesta are o dimensiune relevantă. Folosim funcția cv2.contourArea și procesăm datele doar dacă aria depășește 2000 de pixeli. Această condiție elimină „zgomotul” cauzat de degetele de la cealaltă mână care ar putea apărea accidental în cadru sau de obiectele mici din fundal. 
+\end{itemize}
+
+\section{Detecția Degetelor}
+Aceasta este partea cea mai complexă a implementării, unde geometria determină starea mâinii. 
+\\[2ex]
+\textbf{Pasul 1: Găsirea Centrului (Pumnul)}
+\begin{itemize}
+    \item Folosim \textbf{Distance Transform} pentru a găsi punctul cel mai îndepărtat de margini. Acesta este considerat centrul stabil al palmei, indiferent dacă degetele sunt deschise sau închise. 
+\end{itemize}
+
+\textbf{Pasul 2: Analiza Conturului (Convex Hull)}
+\begin{itemize}
+    \item Determinăm învelișul convex (poligonul care înconjoară mâina)
+    \item Analizăm punctele acestui poligon. Păstrăm un punct ca fiind „vârf de deget” doar dacă: 
+    \begin{itemize}
+        \item Este poziționat deasupra centrului palmei (pe axa Y). 
+        \item Este la o distanță mai mare decât raza palmei. 
+        \item Nu este duplicat (verificăm distanța față de alte puncte deja găsite). 
+    \end{itemize}
+\end{itemize}
+
+\textbf{Pasul 3: Identificarea unui singur deget}
+\begin{itemize}
+    \item Pentru a detecta degetul arătător (gestul pentru Volume Down), folosim \textbf{Distanța Euclidiană} calculată între punctele de pe convexHull și centrul palmei. 
+    \item Dacă sistemul găsește un punct care este situat deasupra centrului palmei și la o distanță mai mare decât limita\_deget (raza palmei $\times$ 2.0), dar nu găsește niciun defect de convexitate (unghiuri ascuțite), atunci concluzia matematică este că avem un singur deget ridicat. 
+\end{itemize}
+
+\textbf{Pasul 4: Analiza Defectelor (Spațiile dintre degete)}
+\begin{itemize}
+    \item Folosim \textbf{cv2.convexityDefects} pentru a găsi punctele unde conturul intră adânc spre palmă (între degete). 
+    \item Aplicăm \textbf{Teorema Cosinusului} pe triunghiul format de defect. Dacă unghiul este ascuțit (< 90°), validăm spațiul. 
+    \item \textbf{Calcul Final:} Nr.Degete = Nr.Defecte + 1. Dacă nu sunt defecte, verificăm dacă avem un singur punct valid (cazul cu 1 deget ridicat). 
+\end{itemize}
+
+\section{Stabilizarea și Execuția Comenzilor}
+Deoarece detecția video este instabilă (o umbră poate face ca 3 degete să pară 2 pentru o milisecundă), nu putem executa comanda instant. 
+\begin{itemize}
+    \item \textbf{Coada de Stabilizare:} Adăugăm numărul de degete detectat într-o listă (degete\_queue) de 15 elemente. Calculăm care număr apare cel mai des în această listă. Comanda se bazează pe acest număr, nu pe cadrul curent. 
+    \item \textbf{Contorul:} Pentru a nu da volumul la maxim instantaneu sau a nu pune Play/Pauză de 10 ori pe secundă, folosim variabila contor\_actiuni. După ce o comandă este executată, sistemul intră într-o scurtă pauză (resetăm contorul la o valoare negativă sau mică) pentru a permite utilizatorului să retragă mâina.
+\end{itemize}
+\textbf{Maparea Gesturilor: }
+\begin{itemize}
+    \item \textbf{1 Deget:} Volum Jos (pyautogui.press('volumedown')) 
+    \item \textbf{2 Degete:} Volum Sus (pyautogui.press('volumeup'))
+    \item \textbf{3 Degete:} Mute Discord (pyautogui.hotkey('delete')) 
+    \item \textbf{4 Degete:} Play/Pause (pyautogui.press('playpause')) 
+\end{itemize}
+
+
+\chapter{Provocări Tehnice și Soluții Optime}
+
+În dezvoltarea acestei aplicații, m-am lovit de mai multe obstacole tehnice cauzate de limitările hardware ale camerei web și de variațiile mediului înconjurător. Mai jos sunt principalele probleme și modul în care le-am rezolvat. 
+
+\section{Instabilitatea detecției (Flickering) }
+\begin{itemize}
+    \item \textbf{Provocarea:} Din cauza zgomotului de imagine sau a mișcării ușoare a mâinii, numărul de degete detectat oscila rapid (de exemplu, între 3 și 4 degete de mai multe ori pe secundă). Aceasta cauza trimiterea a zeci de comenzi eronate către sistemul de operare. 
+    \item \textbf{Soluția:} Am implementat \textbf{coada de stabilizare} de 15 cadre. În loc să execut comanda imediat, sistemul calculează modul statistic (valoarea cea mai frecventă) din acest buffer, asigurându-se că gestul este stabil înainte de a se activa.
+\end{itemize}
+
+\section{Executarea multiplă a aceleiași comenzi}
+\begin{itemize}
+    \item \textbf{Provocarea:} Chiar dacă gestul era stabil, programul trimitea comanda în fiecare cadru. Rezultatul era că volumul ajungea la 100\% instantaneu la cea mai mică ridicare a degetelor.
+    \item \textbf{Soluția:} Am introdus un \textbf{contor de acțiuni} care funcționează ca un sistem de oprire. După fiecare comandă executată, sistemul așteaptă un număr de cadre înainte de a permite o nouă acțiune, oferind utilizatorului timp să retragă mâna. 
+\end{itemize}
+
+\section{Influența fundalului și a luminii}
+\begin{itemize}
+    \item \textbf{Provocarea:} Obiectele din spatele utilizatorului care aveau culori apropiate de piele (mobilă, haine) păcăleau algoritmul de segmentare, fiind detectate ca parte din mână.
+    \item \textbf{Soluția:} Am aplicat două filtre de siguranță: 
+    \begin{itemize}
+        \item \textbf{ROI (Region of Interest):} Limitarea detecției la un pătrat fix de 250x250 pixeli, ignorând restul camerei. 
+        \item \textbf{Aria Minimă:} Am setat o condiție ca algoritmul să proceseze doar obiectele care depășesc o suprafață de 2000 de pixeli, eliminând astfel micile pete de lumină sau obiectele mici din fundal.
+    \end{itemize}
+\end{itemize}
+
+\section{Problema nodurilor degetelor}
+\begin{itemize}
+    \item \textbf{Provocarea:} Algoritmul \textbf{convexHull} detecta uneori și încheieturile degetelor (nodurile) ca fiind vârfuri de deget, raportând un număr mai mare de degete decât cel real.
+    \item \textbf{Soluția:} Am folosit \textbf{Transformata Distanței} pentru a găsi centrul palmei și am stabilit o limită de siguranță (limita\_deget). Orice punct detectat prea aproape de centrul palmei este ignorat, fiind validate doar punctele care se află la o distanță considerabilă, specifice vârfurilor degetelor ridicate.
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{opencv} OpenCV Documentation - \url{https://docs.opencv.org/}
+\bibitem{numpy} NumPy Documentation - \url{https://numpy.org/doc/}
+\bibitem{pyautogui} PyAutoGUI - \url{https://pyautogui.readthedocs.io/}
+\bibitem[publicație]{skin} \textit{Human Skin Color Classification}, Medium - \href{https://medium.com/swlh/human-skin-color-classification-using-the-threshold-classifier-rgb-ycbcr-hsv-python-code-d34d51febdf8}{\textbf{https://medium.com/}}
+\bibitem{surse} \textbf{Surse după care am învățat: }
+\begin{itemize}
+    \item \href{https://www.youtube.com/watch?v=ub3EI4xw48c&list=RDGMEMhCgTQvcskbGUxqI4Sn2QYwVMvvvvcpwFw5o&index=4}{Overview | Image Segmentation}
+    \item \href{https://www.geeksforgeeks.org/python/python-image-blurring-using-opencv/}{Python | Image blurring using OpenCV - GeeksforGeeks }
+    \item \href{https://www.geeksforgeeks.org/python/image-processing-in-python/}{Image Processing in Python - GeeksforGeeks }
+    \item \href{https://www.geeksforgeeks.org/python/python-opencv-cv2-cvtcolor-method/}{Python OpenCV | cv2.cvtColor() method - GeeksforGeeks }
+    \item \href{https://www.geeksforgeeks.org/python/erosion-dilation-images-using-opencv-python/}{Erosion and Dilation of images using OpenCV in Python - GeeksforGeeks }
+    \item \href{https://www.youtube.com/watch?v=9iEPzbG-xLE&list=PLMoSUbG1Q_r8jFS04rot-3NzidnV54Z2q}{Gesture Volume Control | OpenCV Python | Computer Vision }
+\end{itemize}
+\end{thebibliography}
+
+\end{document}
