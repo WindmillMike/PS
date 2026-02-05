@@ -59,7 +59,7 @@ while True:
         masca = cv2.dilate(masca, None, iterations = 2)
         contururi, _ = cv2.findContours(masca, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        degere_din_frame = 0
+        degete_din_frame = 0
 
         if len(contururi) > 0:
             contur = max(contururi, key = cv2.contourArea)
@@ -102,9 +102,9 @@ while True:
                     for pt in coordonate_degete:
                         cv2.circle(roi, pt, 8, (0, 255, 0), -1)
 
-                degere_din_frame = nr_total_degete
+                degete_din_frame = nr_total_degete
 
-        degete_queue.append(degere_din_frame)
+        degete_queue.append(degete_din_frame)
         if len(degete_queue) > 15: degete_queue.pop(0)
         if len(degete_queue) > 0:
             numar = {val: degete_queue.count(val) for val in set(degete_queue)}
@@ -141,5 +141,6 @@ while True:
 
 captura.release()
 cv2.destroyAllWindows()
+
 
 
